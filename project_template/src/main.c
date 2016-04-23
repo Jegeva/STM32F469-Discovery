@@ -116,7 +116,7 @@ void HAL_MspInit(void)
 
 DSI_HandleTypeDef DSI_Handle;
 
-void init_screen()
+HAL_StatusTypeDef init_screen()
 {
     DSI_PLLInitTypeDef DSI_PLLInit;
     DSI_PLLInit.PLLNDIV = 10;
@@ -125,8 +125,13 @@ void init_screen()
     DSI_Handle.Init.AutomaticClockLaneControl=DSI_AUTO_CLK_LANE_CTRL_ENABLE;    
     DSI_Handle.Init.TXEscapeCkdiv=2;
     DSI_Handle.Init.NumberOfLanes=DSI_TWO_DATA_LANES;
-    HAL_DSI_Init(&DSI_Handle,&DSI_PLLInit);
+    return HAL_DSI_Init(&DSI_Handle,&DSI_PLLInit);
     
+}
+
+void f_error()
+{
+    HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_6);
 }
 
 
@@ -142,6 +147,7 @@ int main(void)
     
     HAL_MspInit();
     HAL_Init();
+     BSP_SDRAM_Init();
     //  uint32_t i;
     
     __HAL_RCC_GPIOD_CLK_ENABLE();
@@ -166,13 +172,17 @@ int main(void)
     GPIO_InitStructure.Pin = GPIO_PIN_3;
     HAL_GPIO_Init(GPIOK,&GPIO_InitStructure);
     
-    init_screen();
+    if(init_screen()==HAL_ERROR){
+	f_error();
+	
+    }
+    
     
     while(1){
 
 	Delay(1000);
 	
-	HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_6);
+//	HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_6);
 	HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_5);
 	HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_4);
 	HAL_GPIO_TogglePin(GPIOK,GPIO_PIN_3);

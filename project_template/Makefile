@@ -12,11 +12,18 @@ PROJ_NAME=main
 
 CC=arm-none-eabi-gcc
 OBJCOPY=arm-none-eabi-objcopy
+SIZE=arm-none-eabi-size
+GDB=gdb-multiarch
+STRIP=arm-none-eabi-strip
 
-CFLAGS  = -g -O2 -Wall -Tstm32_flash.ld 
+CFLAGS  = -g -Wall -Tstm32_flash.ld 
 CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 CFLAGS += -DSTM32F469xx
+CFLAGS += -fdata-sections -ffunction-sections -Wl,--gc-sections
+CFLAGS += -Os
+
+FLASH_SIZE = 2097152
 ###################################################
 
 vpath %.c src
@@ -46,6 +53,8 @@ $(PROJ_NAME).elf: $(SRCS)
 	$(CC) $(CFLAGS) $^ -o $@ -L../STM32F469-Discovery_lib -L../../CMSIS/Lib/GCC/ -lstm32f469_discovery -larm_cortexM4lf_math
 	$(OBJCOPY) -O ihex $(PROJ_NAME).elf $(PROJ_NAME).hex
 	$(OBJCOPY) -O binary $(PROJ_NAME).elf $(PROJ_NAME).bin
+	@perl -e 'printf "USED : %0.2f%% of '$(FLASH_SIZE)' bytes\n",(100*'`ls -l main.bin |cut -d' ' -f5`')/'$(FLASH_SIZE)
+
 
 prog: 
 	st-flash write $(PROJ_NAME).bin 0x8000000

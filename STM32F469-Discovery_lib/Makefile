@@ -83,7 +83,19 @@ SRCS = stm32f4xx_hal_adc.c\
 	stm32f4xx_ll_fmc.c\
 	stm32f4xx_ll_fsmc.c\
 	stm32f4xx_ll_sdmmc.c\
-	stm32f4xx_ll_usb.c
+	stm32f4xx_ll_usb.c\
+	stm32469i_discovery_audio.c\
+	stm32469i_discovery.c\
+	stm32469i_discovery_eeprom.c\
+	stm32469i_discovery_lcd.c\
+	stm32469i_discovery_qspi.c\
+	stm32469i_discovery_sd.c\
+	stm32469i_discovery_sdram.c\
+	stm32469i_discovery_ts.c\
+	font8.c\
+	font16.c\
+	font20.c\
+	font24.c
 
 OBJS = $(SRCS:%.c=$(BUILD_DIR)%.o)
 
