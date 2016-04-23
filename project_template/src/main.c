@@ -24,6 +24,10 @@
 #include "stm32f4xx_hal_conf.h" // again, added because ST didn't put it here ?
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_it.h"
+#include "stm32469i_discovery.h"
+#include "stm32469i_discovery_lcd.h"
+#include "stm32469i_discovery_sdram.h"
+#include "stm32469i_discovery_qspi.h"
 
 /** @addtogroup STM32F4_Discovery_Peripheral_Examples
   * @{
@@ -37,9 +41,24 @@
 GPIO_InitTypeDef  GPIO_InitStructure;
 
 /* Private define ------------------------------------------------------------*/
+#define VSYNC           1  
+#define VBP             1 
+#define VFP             1
+#define VACT            480
+#define HSYNC           1
+#define HBP             1
+#define HFP             1
+#define HACT            800
+
+#define LAYER0_ADDRESS  (LCD_FB_START_ADDRESS)
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 volatile uint32_t TimingDelay;
+static RCC_PeriphCLKInitTypeDef  PeriphClkInitStruct;
+extern DSI_HandleTypeDef hdsi_eval;
+DSI_PLLInitTypeDef dsiPllInit;
+DSI_CmdCfgTypeDef CmdCfg;
+DSI_LPCmdTypeDef LPCmd;
 
 /* Private function prototypes -----------------------------------------------*/
 void Delay(__IO uint32_t nCount);
@@ -116,22 +135,12 @@ void HAL_MspInit(void)
 
 DSI_HandleTypeDef DSI_Handle;
 
-HAL_StatusTypeDef init_screen()
-{
-    DSI_PLLInitTypeDef DSI_PLLInit;
-    DSI_PLLInit.PLLNDIV = 10;
-    DSI_PLLInit.PLLIDF=DSI_PLL_IN_DIV1;   
-    DSI_PLLInit.PLLODF=DSI_PLL_OUT_DIV1;
-    DSI_Handle.Init.AutomaticClockLaneControl=DSI_AUTO_CLK_LANE_CTRL_ENABLE;    
-    DSI_Handle.Init.TXEscapeCkdiv=2;
-    DSI_Handle.Init.NumberOfLanes=DSI_TWO_DATA_LANES;
-    return HAL_DSI_Init(&DSI_Handle,&DSI_PLLInit);
-    
-}
 
 void f_error()
 {
     HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_6);
+    while(1);
+    
 }
 
 
@@ -144,10 +153,10 @@ int main(void)
         system_stm32f4xx.c file
      */
     SystemClock_Config();
-    
+    uint8_t  lcd_status = LCD_OK;
     HAL_MspInit();
     HAL_Init();
-     BSP_SDRAM_Init();
+    BSP_SDRAM_Init();
     //  uint32_t i;
     
     __HAL_RCC_GPIOD_CLK_ENABLE();
@@ -155,8 +164,10 @@ int main(void)
     __HAL_RCC_GPIOK_CLK_ENABLE();
     GPIO_InitTypeDef GPIO_InitStructure;
     
-    
-
+    lcd_status = BSP_LCD_Init(); 
+    BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);   
+    BSP_LCD_SelectLayer(0);
+  
     GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStructure.Speed =  GPIO_SPEED_HIGH;
     GPIO_InitStructure.Pull = GPIO_NOPULL; //GPIO_PULLDOWN;//GPIO_PULLUP;// 
@@ -172,10 +183,11 @@ int main(void)
     GPIO_InitStructure.Pin = GPIO_PIN_3;
     HAL_GPIO_Init(GPIOK,&GPIO_InitStructure);
     
-    if(init_screen()==HAL_ERROR){
+    if(lcd_status!=LCD_OK)
 	f_error();
-	
-    }
+    
+    
+    
     
     
     while(1){
