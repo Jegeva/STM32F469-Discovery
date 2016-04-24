@@ -1416,7 +1416,27 @@ __weak void BSP_LCD_LTDC_ER_IRQHandler(void)
 void BSP_LCD_DrawPixel(uint16_t Xpos, uint16_t Ypos, uint32_t RGB_Code)
 {
   /* Write data value to all SDRAM memory */
-  *(__IO uint32_t*) (hltdc_eval.LayerCfg[ActiveLayer].FBStartAdress + (4*(Ypos*BSP_LCD_GetXSize() + Xpos))) = RGB_Code;
+    uint32_t oldpix=*(volatile uint32_t*)(hltdc_eval.LayerCfg[ActiveLayer].FBStartAdress + (4*(Ypos*BSP_LCD_GetXSize() + Xpos)));
+    //  oldpix = 0xffffffff;
+    
+    uint8_t oa,or,og,ob,na,nr,ng,nb;
+    or = (oldpix>>16) & 0xff;
+    og=  (oldpix>>8) & 0xff;
+    ob=  (oldpix) & 0xff;
+    na=  (RGB_Code>>24)&0xff;
+    oa=  0xff-na;
+    nr=  (RGB_Code>>16)&0xff;
+    ng=  (RGB_Code>>8)&0xff;
+    nb=  (RGB_Code)&0xff;
+
+    nr = (or * oa + nr * na)>>8;
+    ng = (og * oa + ng * na)>>8; 
+    nb = (ob * oa + nb * na)>>8;
+    
+    uint32_t newpix = 0xff000000 | (((uint32_t) nr)<<16) | (((uint32_t) ng)<<8) | ((uint32_t) nb);
+ 
+    
+  *(volatile uint32_t*) (hltdc_eval.LayerCfg[ActiveLayer].FBStartAdress + (4*(Ypos*BSP_LCD_GetXSize() + Xpos))) = newpix;
 }
 
 

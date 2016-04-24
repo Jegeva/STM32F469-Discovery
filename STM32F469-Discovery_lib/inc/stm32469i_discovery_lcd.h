@@ -48,7 +48,7 @@
 /* Include LCD component Driver */
 
 /* Include OTM8009A LCD Driver IC driver code */
-#include "../Components/otm8009a/otm8009a.h"
+#include "otm8009a.h"
 
 /* Include SDRAM Driver */
 #include "stm32469i_discovery_sdram.h"
@@ -218,7 +218,8 @@
 
 /** @brief Transparent value in ARGB8888 format
  */
-#define LCD_COLOR_TRANSPARENT   ((uint32_t) 0xFF000000)
+//#define LCD_COLOR_TRANSPARENT   ((uint32_t) 0xFF000000)
+#define LCD_COLOR_TRANSPARENT   ((uint32_t) 0x00000000)
 
 /**
   * @brief LCD default font

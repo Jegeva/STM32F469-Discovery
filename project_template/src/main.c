@@ -54,7 +54,7 @@ GPIO_InitTypeDef  GPIO_InitStructure;
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 volatile uint32_t TimingDelay;
-static RCC_PeriphCLKInitTypeDef  PeriphClkInitStruct;
+
 extern DSI_HandleTypeDef hdsi_eval;
 DSI_PLLInitTypeDef dsiPllInit;
 DSI_CmdCfgTypeDef CmdCfg;
@@ -69,44 +69,57 @@ void Delay(__IO uint32_t nCount);
   * @param  None
   * @retval None
   */
-void SystemClock_Config(void)
+
+static void SystemClock_Config(void)
 {
-
-  RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  
 
+  /* Enable Power Control clock */
   __HAL_RCC_PWR_CLK_ENABLE();
 
+  /* The voltage scaling allows optimizing the power consumption when the device is
+     clocked below the maximum system frequency, to update the voltage scaling value
+     regarding system frequency refer to product datasheet.  */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
+  /* Enable HSE Oscillator and activate PLL with HSE as source */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 180;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
-  RCC_OscInitStruct.PLL.PLLR = 2;
+  RCC_OscInitStruct.HSEState       = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN       = 360;
+  RCC_OscInitStruct.PLL.PLLP       = RCC_PLLP_DIV2; /* to have ck_pll = 360 MHz / 2 = 180 MHz */
+  RCC_OscInitStruct.PLL.PLLQ       = 7;
+  RCC_OscInitStruct.PLL.PLLR       = 6; /* to have ck_plllcd = 60 MHz : replace DPHY PLL clock when this PLL is Off in ULPM mode */
   HAL_RCC_OscConfig(&RCC_OscInitStruct);
+ 
 
+  /* Activate the Over-Drive mode */
   HAL_PWREx_EnableOverDrive();
+  
 
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
+     clocks dividers */
+  RCC_ClkInitStruct.ClockType =  (RCC_CLOCKTYPE_SYSCLK |
+                                 RCC_CLOCKTYPE_HCLK   |
+                                 RCC_CLOCKTYPE_PCLK1  |
+                                 RCC_CLOCKTYPE_PCLK2);
+
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+
+  /* Set nominal timing configurations for STM32F469xx */
+  RCC_ClkInitStruct.AHBCLKDivider  = RCC_SYSCLK_DIV1; /* f(hclk) = 180 MHz / 1 = 180 MHz        */
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;   /* f(pclk1) = f(hclk)/4  = 180/4 = 45 MHz */
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;   /* f(pclk2) = f(hclk)/2  = 90 MHz         */
+
+  /* Set Flash latency parameters (wait states) depending on CPU clock = ck_sys = 180 MHz */
   HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5);
 
-  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
-
-  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-  /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
+
 
 void HAL_MspInit(void)
 {
@@ -143,6 +156,13 @@ void f_error()
     
 }
 
+struct 
+{
+    uint8_t border ;
+    
+} GUI_Conf;
+
+    
 
 int main(void)
 {
@@ -158,20 +178,19 @@ int main(void)
     HAL_Init();
     BSP_SDRAM_Init();
     //  uint32_t i;
+    int i;
     
     __HAL_RCC_GPIOD_CLK_ENABLE();
     __HAL_RCC_GPIOG_CLK_ENABLE();
     __HAL_RCC_GPIOK_CLK_ENABLE();
     GPIO_InitTypeDef GPIO_InitStructure;
-    
-    lcd_status = BSP_LCD_Init(); 
-    BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);   
-    BSP_LCD_SelectLayer(0);
+   
   
     GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStructure.Speed =  GPIO_SPEED_HIGH;
     GPIO_InitStructure.Pull = GPIO_NOPULL; //GPIO_PULLDOWN;//GPIO_PULLUP;// 
 
+    GUI_Conf.border=8;
     
 
     GPIO_InitStructure.Pin = GPIO_PIN_6;
@@ -182,23 +201,73 @@ int main(void)
     HAL_GPIO_Init(GPIOD,&GPIO_InitStructure);
     GPIO_InitStructure.Pin = GPIO_PIN_3;
     HAL_GPIO_Init(GPIOK,&GPIO_InitStructure);
+
+
+    BSP_LCD_Reset(); BSP_LCD_MspInit();
+    //lcd_status = BSP_LCD_InitEx(LCD_ORIENTATION_PORTRAIT);
+    //lcd_status = BSP_LCD_InitEx(LCD_ORIENTATION_LANDSCAPE);
+    lcd_status = BSP_LCD_Init();
+
+   
     
+    
+    BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);   
+    BSP_LCD_SelectLayer(0);
+    BSP_LCD_DisplayOn();
+    BSP_LCD_SetTransparency(0,0xff);
     if(lcd_status!=LCD_OK)
 	f_error();
+    BSP_LCD_Clear(LCD_COLOR_BLACK);
+ 
+   
+    BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+    BSP_LCD_FillRect(0, 0,BSP_LCD_GetXSize(),BSP_LCD_GetYSize());
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    BSP_LCD_FillRect(GUI_Conf.border, GUI_Conf.border,BSP_LCD_GetXSize()-2*GUI_Conf.border,BSP_LCD_GetYSize()-2*GUI_Conf.border);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_SetFont(&Font16);
+    BSP_LCD_SetBackColor(LCD_COLOR_TRANSPARENT);
+    BSP_LCD_DisplayStringAtLine(1, (uint8_t *)"  Project template");
+
+  
     
+    BSP_LCD_SetTextColor(0xffff0000);
+    BSP_LCD_FillRect(340,200 ,40,40);
+    BSP_LCD_SetTextColor(0xff00ff00);
+    BSP_LCD_FillRect(380,200 ,40,40);
+    BSP_LCD_SetTextColor(0xff0000ff);
+    BSP_LCD_FillRect(420,200 ,40,40);
     
+  
+    i=0;
     
+ 
     
+
     
     while(1){
 
 	Delay(1000);
+	switch(i%4){
+	case 0:
+	    HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_6);
+	    break;
+	    
+	case 1: 
+	    HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_4);
+	    break;
+	case 2:
+	    HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_5);
+	    break;
+	case 3:
+	    HAL_GPIO_TogglePin(GPIOK,GPIO_PIN_3);
+	    break;
+	}
+	i++;
+	if(! i%4)
+	    i=0;
 	
-//	HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_6);
-	HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_5);
-	HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_4);
-	HAL_GPIO_TogglePin(GPIOK,GPIO_PIN_3);
-
+	
 	
     }
     
