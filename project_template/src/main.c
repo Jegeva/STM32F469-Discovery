@@ -227,20 +227,11 @@ int main(void)
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_SetFont(&Font16);
     BSP_LCD_SetBackColor(LCD_COLOR_TRANSPARENT);
-    BSP_LCD_DisplayStringAtLine(1, (uint8_t *)"  Project template");
+    BSP_LCD_DisplayStringAtLine(1, (uint8_t *)"  FAT SD");
 
   
     
-    BSP_LCD_SetTextColor(0xffff0000);
-    BSP_LCD_FillRect(340,200 ,40,40);
-    BSP_LCD_SetTextColor(0xff00ff00);
-    BSP_LCD_FillRect(380,200 ,40,40);
-    BSP_LCD_SetTextColor(0xff0000ff);
-    BSP_LCD_FillRect(420,200 ,40,40);
-    
-  
-    i=0;
-    
+     
  
     
 
